@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "FamilyRecipeAPI": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7009",
+      "launchBrowser": false
+    }
+  }
+}
