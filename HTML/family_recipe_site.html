@@ -589,7 +589,7 @@
         async function loadRecipes() {
             showLoading(true);
             try {
-                const response = await fetch(`${API_BASE}/GetRecipes`);
+                const response = await fetch(`${API_BASE}/recipes`);
 
                 if (!response.ok) {
                     throw new Error('Failed to load recipes');
@@ -753,7 +753,7 @@
                     photoBase64: photoBase64
                 };
 
-                const response = await fetch(`${API_BASE}/AddRecipe`, {
+                const response = await fetch(`${API_BASE}/recipes`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(recipeData)
