@@ -622,7 +622,7 @@
 
         function displayRecipes(recipesToShow) {
             const grid = document.getElementById('recipeGrid');
-            
+
             if (recipesToShow.length === 0) {
                 displayEmptyState();
                 return;
@@ -630,19 +630,20 @@
 
             grid.innerHTML = recipesToShow.map(recipe => {
                 const date = new Date(recipe.createdAt).toLocaleDateString();
-                return '
-                    <div class="recipe-card" onclick="viewRecipe(${recipe.recipeID})">
-                        <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
-                             alt="${recipe.name}" 
-                             class="recipe-image"
-                             onerror="this.src='https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'">
-                        <div class="recipe-content">
-                            <h3 class="recipe-title">${recipe.name}</h3>
-                            <span class="recipe-category">${recipe.category}</span>
-                            <p class="recipe-author">By ${recipe.author} • ${date}</p>
-                        </div>
-                    </div>
-                ';
+                // Use backticks (`) instead of single quotes (') for the template literal
+                return `
+            <div class="recipe-card" onclick="viewRecipe(${recipe.recipeID})">
+                <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
+                     alt="${recipe.name}" 
+                     class="recipe-image"
+                     onerror="this.src='https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'">
+                <div class="recipe-content">
+                    <h3 class="recipe-title">${recipe.name}</h3>
+                    <span class="recipe-category">${recipe.category}</span>
+                    <p class="recipe-author">By ${recipe.author} • ${date}</p>
+                </div>
+            </div>
+        `;
             }).join('');
         }
 
