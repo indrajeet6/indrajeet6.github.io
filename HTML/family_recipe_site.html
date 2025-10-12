@@ -466,7 +466,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/Login`, {
+                const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -526,7 +526,7 @@
             signupBtn.textContent = 'Creating Account...';
 
             try {
-                const response = await fetch(`${API_BASE}/Signup`, {
+                const response = await fetch(`${API_BASE}/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
