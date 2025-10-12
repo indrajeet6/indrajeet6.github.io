@@ -589,7 +589,7 @@
         async function loadRecipes() {
             showLoading(true);
             try {
-                const response = await fetch(`${API_BASE}/recipes`);
+                const response = await fetch(`${API_BASE}/GetRecipes`);
 
                 if (!response.ok) {
                     throw new Error('Failed to load recipes');
