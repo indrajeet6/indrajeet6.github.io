@@ -436,7 +436,7 @@
         function showMessage(message, type = 'error') {
             const container = document.getElementById('messageContainer');
             const className = type === 'success' ? 'success-message' : 'error-message';
-            container.innerHTML = `<div class="${className}">${message}</div>`;
+            container.innerHTML = '<div class="${className}">${message}</div>';
             setTimeout(() => {
                 container.innerHTML = '';
             }, 5000);
@@ -449,7 +449,7 @@
         function getAuthHeaders() {
             return {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': 'Bearer ${authToken}'
             };
         }
 
@@ -466,7 +466,7 @@
             }
 
             try {
-                const response = await fetch(`${API_BASE}/login`, {
+                const response = await fetch('${API_BASE}/Login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
@@ -526,7 +526,7 @@
             signupBtn.textContent = 'Creating Account...';
 
             try {
-                const response = await fetch(`${API_BASE}/Signup`, {
+                const response = await fetch('${API_BASE}/Signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
@@ -589,7 +589,7 @@
         async function loadRecipes() {
             showLoading(true);
             try {
-                const response = await fetch(`${API_BASE}/recipes`);
+                const response = await fetch('${API_BASE}/GetRecipes');
                 
                 if (!response.ok) {
                     throw new Error('Failed to load recipes');
@@ -630,7 +630,7 @@
 
             grid.innerHTML = recipesToShow.map(recipe => {
                 const date = new Date(recipe.createdAt).toLocaleDateString();
-                return `
+                return '
                     <div class="recipe-card" onclick="viewRecipe(${recipe.recipeID})">
                         <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
                              alt="${recipe.name}" 
@@ -642,18 +642,18 @@
                             <p class="recipe-author">By ${recipe.author} • ${date}</p>
                         </div>
                     </div>
-                `;
+                ';
             }).join('');
         }
 
         function displayEmptyState() {
             const grid = document.getElementById('recipeGrid');
-            grid.innerHTML = `
+            grid.innerHTML = '
                 <div class="empty-state">
                     <h2>No recipes found</h2>
                     <p>Try adjusting your search or category filter, or add a new recipe!</p>
                 </div>
-            `;
+            ';
         }
 
         function viewRecipe(id) {
@@ -661,7 +661,7 @@
             if (!recipe) return;
 
             const date = new Date(recipe.createdAt).toLocaleDateString();
-            document.getElementById('recipeDetails').innerHTML = `
+            document.getElementById('recipeDetails').innerHTML = '
                 <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
                      alt="${recipe.name}" 
                      style="width: 100%; border-radius: 10px; margin-bottom: 20px;"
@@ -673,7 +673,7 @@
                 <p style="white-space: pre-line;">${recipe.ingredients}</p>
                 <h3 style="margin-top: 20px;">Instructions</h3>
                 <p style="white-space: pre-line;">${recipe.instructions}</p>
-            `;
+            ';
             document.getElementById('viewRecipeModal').style.display = 'block';
         }
 
@@ -712,7 +712,7 @@
 
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+                    preview.innerHTML = '<img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">';
                 }
                 reader.readAsDataURL(file);
             } else {
@@ -753,7 +753,7 @@
                     photoBase64: photoBase64
                 };
 
-                const response = await fetch(`${API_BASE}/recipes`, {
+                const response = await fetch('${API_BASE}/AddRecipe', {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify(recipeData)
