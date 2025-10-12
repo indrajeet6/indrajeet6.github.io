@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Azure.Storage.Blobs;
 using FamilyRecipeAPI.Models;
 using FamilyRecipeAPI.Services;
+using System.Data.SqlClient;
 
 namespace FamilyRecipeAPI.Functions
 {
@@ -80,7 +81,7 @@ namespace FamilyRecipeAPI.Functions
 
                 // Insert recipe into database
                 var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
-                using (var connection = new SqlConnection(connectionString))
+                using (var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
 
@@ -88,7 +89,7 @@ namespace FamilyRecipeAPI.Functions
                         INSERT INTO Recipes (Name, Category, Ingredients, Instructions, PhotoURL, AuthorID)
                         VALUES (@Name, @Category, @Ingredients, @Instructions, @PhotoURL, @AuthorID)";
 
-                    using (var command = new SqlCommand(query, connection))
+                    using (var command = new Microsoft.Data.SqlClient.SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Name", request.Name);
                         command.Parameters.AddWithValue("@Category", request.Category);

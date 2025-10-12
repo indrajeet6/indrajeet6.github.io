@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using BCrypt.Net;
 using FamilyRecipeAPI.Models;
 using FamilyRecipeAPI.Services;
+using System.Data.SqlClient;
 
 namespace FamilyRecipeAPI.Functions
 {
@@ -30,7 +31,7 @@ namespace FamilyRecipeAPI.Functions
 
                 var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
 
-                using (var connection = new SqlConnection(connectionString))
+                using (var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
 
@@ -39,7 +40,7 @@ namespace FamilyRecipeAPI.Functions
                         FROM Users 
                         WHERE Username = @Username";
 
-                    using (var command = new SqlCommand(query, connection))
+                    using (var command = new Microsoft.Data.SqlClient.SqlCommand(query, connection))
                     {
                         command.Parameters.AddWithValue("@Username", request.Username);
 
@@ -69,7 +70,7 @@ namespace FamilyRecipeAPI.Functions
                             // Generate JWT token
                             var jwtSecret = Environment.GetEnvironmentVariable("JWTSecret");
                             var tokenService = new TokenService(jwtSecret);
-                            var token = tokenService.GenerateToken(userId, username);
+                            var token = tokenService.GenerateToken((int)userId, username);
 
                             return new OkObjectResult(new LoginResponse
                             {

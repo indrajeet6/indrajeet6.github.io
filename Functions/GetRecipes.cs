@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -8,6 +8,7 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using FamilyRecipeAPI.Models;
+using System.Data.SqlClient;
 
 namespace FamilyRecipeAPI.Functions
 {
@@ -28,7 +29,7 @@ namespace FamilyRecipeAPI.Functions
                 var recipes = new List<Recipe>();
                 var connectionString = Environment.GetEnvironmentVariable("SqlConnectionString");
 
-                using (var connection = new SqlConnection(connectionString))
+                using (var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
                 {
                     await connection.OpenAsync();
 
@@ -52,7 +53,7 @@ namespace FamilyRecipeAPI.Functions
 
                     query += " ORDER BY r.CreatedAt DESC";
 
-                    using (var command = new SqlCommand(query, connection))
+                    using (var command = new Microsoft.Data.SqlClient.SqlCommand(query, connection))
                     {
                         if (!string.IsNullOrEmpty(search))
                         {
