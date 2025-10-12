@@ -649,12 +649,12 @@
 
         function displayEmptyState() {
             const grid = document.getElementById('recipeGrid');
-            grid.innerHTML = '
+            grid.innerHTML = `
                 <div class="empty-state">
                     <h2>No recipes found</h2>
                     <p>Try adjusting your search or category filter, or add a new recipe!</p>
                 </div>
-            ';
+            `;
         }
 
         function viewRecipe(id) {
@@ -662,7 +662,7 @@
             if (!recipe) return;
 
             const date = new Date(recipe.createdAt).toLocaleDateString();
-            document.getElementById('recipeDetails').innerHTML = '
+            document.getElementById('recipeDetails').innerHTML = `
                 <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
                      alt="${recipe.name}" 
                      style="width: 100%; border-radius: 10px; margin-bottom: 20px;"
@@ -674,7 +674,7 @@
                 <p style="white-space: pre-line;">${recipe.ingredients}</p>
                 <h3 style="margin-top: 20px;">Instructions</h3>
                 <p style="white-space: pre-line;">${recipe.instructions}</p>
-            ';
+            `;
             document.getElementById('viewRecipeModal').style.display = 'block';
         }
 
