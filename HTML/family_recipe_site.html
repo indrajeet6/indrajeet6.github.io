@@ -42,6 +42,7 @@
             gap: 10px;
             align-items: center;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .auth-section input {
@@ -49,6 +50,7 @@
             border: 2px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
+            min-width: 150px;
         }
 
         .btn {
@@ -61,12 +63,17 @@
             transition: all 0.3s;
         }
 
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .btn-primary {
             background: #667eea;
             color: white;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: #5568d3;
             transform: translateY(-2px);
         }
@@ -76,9 +83,18 @@
             color: white;
         }
 
+        .btn-success:hover:not(:disabled) {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+
         .btn-danger {
             background: #f56565;
             color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
         }
 
         .search-filter {
@@ -220,12 +236,70 @@
         .hidden {
             display: none;
         }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c53030;
+        }
+
+        .success-message {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #22543d;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .empty-state h2 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #718096;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .auth-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .auth-section input, .auth-section .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🍳 Family Recipe Collection</h1>
+            <div id="messageContainer"></div>
             <div id="loggedOutSection" class="auth-section">
                 <input type="text" id="loginUsername" placeholder="Username">
                 <input type="password" id="loginPassword" placeholder="Password">
@@ -253,6 +327,7 @@
             </select>
         </div>
 
+        <div id="loadingIndicator" class="loading hidden">Loading recipes...</div>
         <div class="recipe-grid" id="recipeGrid"></div>
     </div>
 
@@ -291,7 +366,7 @@
                     <input type="file" id="recipePhoto" accept="image/*" onchange="previewImage(event)">
                     <div id="imagePreview" style="margin-top: 10px;"></div>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit Recipe</button>
+                <button type="submit" class="btn btn-primary" id="submitRecipeBtn">Submit Recipe</button>
             </form>
         </div>
     </div>
@@ -305,120 +380,135 @@
     </div>
 
     <script>
-        // Mock data storage (in production, this connects to Azure SQL via API)
-        let recipes = [
-            {
-                id: 1,
-                name: "Grandma's Chocolate Chip Cookies",
-                category: "Dessert",
-                ingredients: "2 cups flour\n1 cup butter\n1 cup sugar\n2 eggs\n2 cups chocolate chips",
-                instructions: "1. Preheat oven to 350°F\n2. Mix butter and sugar\n3. Add eggs\n4. Fold in flour and chips\n5. Bake for 12 minutes",
-                photo: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=400",
-                author: "Mom",
-                date: "2024-10-01"
-            },
-            {
-                id: 2,
-                name: "Dad's Famous Spaghetti",
-                category: "Dinner",
-                ingredients: "1 lb spaghetti\n2 lbs ground beef\n2 cans tomato sauce\n1 onion\nGarlic\nItalian seasoning",
-                instructions: "1. Brown ground beef with onions\n2. Add garlic and sauce\n3. Simmer for 30 minutes\n4. Cook pasta\n5. Serve with parmesan",
-                photo: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400",
-                author: "Dad",
-                date: "2024-09-15"
-            }
-        ];
+        // ===================================
+        // CONFIGURATION
+        // ===================================
+        // IMPORTANT: Replace this with your Azure Function App URL after deployment
+        const API_BASE = 'https://family-recipe-api.azurewebsites.net/api';
+        
+        // For local development, use:
+        // const API_BASE = 'http://localhost:7071/api';
 
+        // ===================================
+        // STATE MANAGEMENT
+        // ===================================
+        let recipes = [];
         let currentUserName = null;
-        let allRecipes = [...recipes];
+        let authToken = null;
 
-        // Demo login (in production, authenticate against database)
-        function login() {
-            const username = document.getElementById('loginUsername').value;
+        // ===================================
+        // UTILITY FUNCTIONS
+        // ===================================
+        function showMessage(message, type = 'error') {
+            const container = document.getElementById('messageContainer');
+            const className = type === 'success' ? 'success-message' : 'error-message';
+            container.innerHTML = `<div class="${className}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function showLoading(show = true) {
+            document.getElementById('loadingIndicator').classList.toggle('hidden', !show);
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            };
+        }
+
+        // ===================================
+        // AUTHENTICATION
+        // ===================================
+        async function login() {
+            const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             
-            if (username && password) {
-                currentUserName = username;
-                document.getElementById('currentUser').textContent = username;
+            if (!username || !password) {
+                showMessage('Please enter username and password');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Login failed');
+                }
+
+                const data = await response.json();
+                authToken = data.token;
+                currentUserName = data.username;
+                
+                // Store token in session
+                sessionStorage.setItem('authToken', authToken);
+                sessionStorage.setItem('username', currentUserName);
+
+                document.getElementById('currentUser').textContent = currentUserName;
                 document.getElementById('loggedOutSection').classList.add('hidden');
                 document.getElementById('loggedInSection').classList.remove('hidden');
                 document.getElementById('loginUsername').value = '';
                 document.getElementById('loginPassword').value = '';
-            } else {
-                alert('Please enter username and password');
+
+                showMessage('Login successful!', 'success');
+                loadRecipes();
+            } catch (error) {
+                showMessage(error.message || 'Login failed. Please check your credentials.');
             }
         }
 
         function logout() {
+            authToken = null;
             currentUserName = null;
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('username');
+            
             document.getElementById('loggedOutSection').classList.remove('hidden');
             document.getElementById('loggedInSection').classList.add('hidden');
-        }
-
-        function openAddRecipeModal() {
-            if (!currentUserName) {
-                alert('Please login to add recipes');
-                return;
-            }
-            document.getElementById('addRecipeModal').style.display = 'block';
-        }
-
-        function closeAddRecipeModal() {
-            document.getElementById('addRecipeModal').style.display = 'none';
-            document.getElementById('recipeForm').reset();
-            document.getElementById('imagePreview').innerHTML = '';
-        }
-
-        function previewImage(event) {
-            const file = event.target.files[0];
-            const preview = document.getElementById('imagePreview');
             
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+            showMessage('Logged out successfully', 'success');
+        }
+
+        function checkExistingSession() {
+            const token = sessionStorage.getItem('authToken');
+            const username = sessionStorage.getItem('username');
+            
+            if (token && username) {
+                authToken = token;
+                currentUserName = username;
+                document.getElementById('currentUser').textContent = currentUserName;
+                document.getElementById('loggedOutSection').classList.add('hidden');
+                document.getElementById('loggedInSection').classList.remove('hidden');
+            }
+        }
+
+        // ===================================
+        // RECIPE OPERATIONS
+        // ===================================
+        async function loadRecipes() {
+            showLoading(true);
+            try {
+                const response = await fetch(`${API_BASE}/recipes`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load recipes');
                 }
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '';
+
+                recipes = await response.json();
+                filterRecipes();
+            } catch (error) {
+                showMessage('Failed to load recipes: ' + error.message);
+                displayEmptyState();
+            } finally {
+                showLoading(false);
             }
-        }
-
-        function submitRecipe(event) {
-            event.preventDefault();
-            
-            const photoFile = document.getElementById('recipePhoto').files[0];
-            let photoDataURL = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400';
-            
-            if (photoFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    photoDataURL = e.target.result;
-                    saveRecipe(photoDataURL);
-                }
-                reader.readAsDataURL(photoFile);
-            } else {
-                saveRecipe(photoDataURL);
-            }
-        }
-
-        function saveRecipe(photoURL) {
-            const newRecipe = {
-                id: recipes.length + 1,
-                name: document.getElementById('recipeName').value,
-                category: document.getElementById('recipeCategory').value,
-                ingredients: document.getElementById('recipeIngredients').value,
-                instructions: document.getElementById('recipeInstructions').value,
-                photo: photoURL,
-                author: currentUserName,
-                date: new Date().toISOString().split('T')[0]
-            };
-
-            recipes.push(newRecipe);
-            allRecipes = [...recipes];
-            closeAddRecipeModal();
-            filterRecipes();
-            alert('Recipe added successfully!');
         }
 
         function filterRecipes() {
@@ -438,27 +528,53 @@
 
         function displayRecipes(recipesToShow) {
             const grid = document.getElementById('recipeGrid');
-            grid.innerHTML = recipesToShow.map(recipe => `
-                <div class="recipe-card" onclick="viewRecipe(${recipe.id})">
-                    <img src="${recipe.photo}" alt="${recipe.name}" class="recipe-image">
-                    <div class="recipe-content">
-                        <h3 class="recipe-title">${recipe.name}</h3>
-                        <span class="recipe-category">${recipe.category}</span>
-                        <p class="recipe-author">By ${recipe.author} • ${recipe.date}</p>
+            
+            if (recipesToShow.length === 0) {
+                displayEmptyState();
+                return;
+            }
+
+            grid.innerHTML = recipesToShow.map(recipe => {
+                const date = new Date(recipe.createdAt).toLocaleDateString();
+                return `
+                    <div class="recipe-card" onclick="viewRecipe(${recipe.recipeID})">
+                        <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
+                             alt="${recipe.name}" 
+                             class="recipe-image"
+                             onerror="this.src='https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'">
+                        <div class="recipe-content">
+                            <h3 class="recipe-title">${recipe.name}</h3>
+                            <span class="recipe-category">${recipe.category}</span>
+                            <p class="recipe-author">By ${recipe.author} • ${date}</p>
+                        </div>
                     </div>
+                `;
+            }).join('');
+        }
+
+        function displayEmptyState() {
+            const grid = document.getElementById('recipeGrid');
+            grid.innerHTML = `
+                <div class="empty-state">
+                    <h2>No recipes found</h2>
+                    <p>Try adjusting your search or category filter, or add a new recipe!</p>
                 </div>
-            `).join('');
+            `;
         }
 
         function viewRecipe(id) {
-            const recipe = recipes.find(r => r.id === id);
+            const recipe = recipes.find(r => r.recipeID === id);
             if (!recipe) return;
 
+            const date = new Date(recipe.createdAt).toLocaleDateString();
             document.getElementById('recipeDetails').innerHTML = `
-                <img src="${recipe.photo}" alt="${recipe.name}" style="width: 100%; border-radius: 10px; margin-bottom: 20px;">
+                <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}" 
+                     alt="${recipe.name}" 
+                     style="width: 100%; border-radius: 10px; margin-bottom: 20px;"
+                     onerror="this.src='https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'">
                 <h2>${recipe.name}</h2>
                 <span class="recipe-category">${recipe.category}</span>
-                <p class="recipe-author">By ${recipe.author} • ${recipe.date}</p>
+                <p class="recipe-author">By ${recipe.author} • ${date}</p>
                 <h3 style="margin-top: 20px;">Ingredients</h3>
                 <p style="white-space: pre-line;">${recipe.ingredients}</p>
                 <h3 style="margin-top: 20px;">Instructions</h3>
@@ -467,19 +583,126 @@
             document.getElementById('viewRecipeModal').style.display = 'block';
         }
 
+        // ===================================
+        // ADD RECIPE
+        // ===================================
+        function openAddRecipeModal() {
+            if (!authToken) {
+                showMessage('Please login to add recipes');
+                return;
+            }
+            document.getElementById('addRecipeModal').style.display = 'block';
+        }
+
+        function closeAddRecipeModal() {
+            document.getElementById('addRecipeModal').style.display = 'none';
+            document.getElementById('recipeForm').reset();
+            document.getElementById('imagePreview').innerHTML = '';
+        }
+
         function closeViewRecipeModal() {
             document.getElementById('viewRecipeModal').style.display = 'none';
         }
 
-        // Close modals when clicking outside
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    showMessage('Image size should be less than 5MB');
+                    event.target.value = '';
+                    preview.innerHTML = '';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">`;
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+
+        async function submitRecipe(event) {
+            event.preventDefault();
+            
+            if (!authToken) {
+                showMessage('Please login to add recipes');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitRecipeBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const photoFile = document.getElementById('recipePhoto').files[0];
+                let photoBase64 = null;
+
+                if (photoFile) {
+                    photoBase64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(photoFile);
+                    });
+                }
+
+                const recipeData = {
+                    name: document.getElementById('recipeName').value,
+                    category: document.getElementById('recipeCategory').value,
+                    ingredients: document.getElementById('recipeIngredients').value,
+                    instructions: document.getElementById('recipeInstructions').value,
+                    photoBase64: photoBase64
+                };
+
+                const response = await fetch(`${API_BASE}/recipes`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(recipeData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to add recipe');
+                }
+
+                showMessage('Recipe added successfully!', 'success');
+                closeAddRecipeModal();
+                await loadRecipes();
+            } catch (error) {
+                showMessage('Failed to add recipe: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Recipe';
+            }
+        }
+
+        // ===================================
+        // EVENT LISTENERS
+        // ===================================
         window.onclick = function(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.style.display = 'none';
             }
         }
 
-        // Initial display
-        displayRecipes(recipes);
+        document.getElementById('loginPassword').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                login();
+            }
+        });
+
+        // ===================================
+        // INITIALIZATION
+        // ===================================
+        document.addEventListener('DOMContentLoaded', function() {
+            checkExistingSession();
+            loadRecipes();
+        });
     </script>
 </body>
 </html>
