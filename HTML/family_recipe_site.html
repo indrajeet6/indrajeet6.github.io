@@ -457,8 +457,17 @@
         // AUTHENTICATION
         // ===================================
         async function login() {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
+            const usernameElement = document.getElementById('loginUsername');
+            const passwordElement = document.getElementById('loginPassword');
+
+            if (!usernameElement || !passwordElement) {
+                console.error('Login form elements not found');
+                showMessage('Login form not properly loaded. Please refresh the page.');
+                return;
+            }
+
+            const username = usernameElement.value.trim();
+            const password = passwordElement.value;
 
             if (!username || !password) {
                 showMessage('Please enter username and password');
@@ -577,10 +586,19 @@
             if (token && username) {
                 authToken = token;
                 currentUserName = username;
-                document.getElementById('currentUser').textContent = currentUserName;
-                document.getElementById('loggedOutSection').classList.add('hidden');
-                document.getElementById('loggedInSection').classList.remove('hidden');
-            }
+
+                const currentUserElement = document.getElementById('currentUser');
+                const loggedOutSection = document.getElementById('loggedOutSection');
+                const loggedInSection = document.getElementById('loggedInSection');
+
+                // Add null checks
+                if (currentUserElement && loggedOutSection && loggedInSection) {
+                    currentUserElement.textContent = currentUserName;
+                    loggedOutSection.classList.add('hidden');
+                    loggedInSection.classList.remove('hidden');
+                } else {
+                    console.error('Auth UI elements not found');
+                }
         }
 
         // ===================================
@@ -794,8 +812,13 @@
         // INITIALIZATION
         // ===================================
         document.addEventListener('DOMContentLoaded', function () {
-            checkExistingSession();
-            loadRecipes();
+            try {
+                checkExistingSession();
+                loadRecipes();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showMessage('Failed to initialize application. Please refresh the page.');
+            }
         });
     </script>
 </body>
