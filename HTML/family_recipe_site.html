@@ -303,21 +303,21 @@
             <div id="loggedOutSection" class="auth-section">
                 <input type="text" id="loginUsername" placeholder="Username">
                 <input type="password" id="loginPassword" placeholder="Password">
-                <button class="btn btn-primary" onclick="login()">Login</button>
-                <button class="btn btn-success" onclick="openSignupModal()">Sign Up</button>
+                <button class="btn btn-primary" id="loginBtn">Login</button>
+                <button class="btn btn-success" id="signupBtnMain">Sign Up</button>
             </div>
             <div id="loggedInSection" class="auth-section hidden">
                 <div class="user-info">
                     <span>Welcome, <span class="user-name" id="currentUser"></span>!</span>
-                    <button class="btn btn-success" onclick="openAddRecipeModal()">+ Add Recipe</button>
-                    <button class="btn btn-danger" onclick="logout()">Logout</button>
+                    <button class="btn btn-success" id="addRecipeBtnMain">+ Add Recipe</button>
+                    <button class="btn btn-danger" id="logoutBtn">Logout</button>
                 </div>
             </div>
         </header>
 
         <div class="search-filter">
-            <input type="text" id="searchInput" placeholder="🔍 Search recipes..." oninput="filterRecipes()">
-            <select id="categoryFilter" onchange="filterRecipes()">
+            <input type="text" id="searchInput" placeholder="🔍 Search recipes...">
+            <select id="categoryFilter">
                 <option value="">All Categories</option>
                 <option value="Breakfast">Breakfast</option>
                 <option value="Lunch">Lunch</option>
@@ -335,9 +335,9 @@
     <!-- Add Recipe Modal -->
     <div id="addRecipeModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeAddRecipeModal()">&times;</span>
+            <span class="close-btn" id="closeAddRecipeBtn">&times;</span>
             <h2>Add New Recipe</h2>
-            <form id="recipeForm" onsubmit="submitRecipe(event)">
+            <form id="recipeForm">
                 <div class="form-group">
                     <label>Recipe Name *</label>
                     <input type="text" id="recipeName" required>
@@ -364,7 +364,7 @@
                 </div>
                 <div class="form-group">
                     <label>Recipe Photo</label>
-                    <input type="file" id="recipePhoto" accept="image/*" onchange="previewImage(event)">
+                    <input type="file" id="recipePhoto" accept="image/*">
                     <div id="imagePreview" style="margin-top: 10px;"></div>
                 </div>
                 <button type="submit" class="btn btn-primary" id="submitRecipeBtn">Submit Recipe</button>
@@ -375,7 +375,7 @@
     <!-- View Recipe Modal -->
     <div id="viewRecipeModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeViewRecipeModal()">&times;</span>
+            <span class="close-btn" id="closeViewRecipeBtn">&times;</span>
             <div id="recipeDetails"></div>
         </div>
     </div>
@@ -383,10 +383,10 @@
     <!-- Signup Modal -->
     <div id="signupModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="closeSignupModal()">&times;</span>
+            <span class="close-btn" id="closeSignupBtn">&times;</span>
             <h2>Create Account</h2>
             <p style="color: #718096; margin-bottom: 20px;">Join our family recipe collection</p>
-            <form id="signupForm" onsubmit="submitSignup(event)">
+            <form id="signupForm">
                 <div class="form-group">
                     <label>Username *</label>
                     <input type="text" id="signupUsername" required minlength="3" placeholder="Choose a username">
@@ -405,9 +405,9 @@
                     <label>Confirm Password *</label>
                     <input type="password" id="signupConfirmPassword" required minlength="6" placeholder="Re-enter password">
                 </div>
-                <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
+                <button type="submit" class="btn btn-primary" id="signupSubmitBtn">Create Account</button>
                 <p style="margin-top: 15px; text-align: center; color: #718096;">
-                    Already have an account? <a href="#" onclick="closeSignupModal(); return false;" style="color: #667eea;">Login here</a>
+                    Already have an account? <a href="#" id="signupLoginLink" style="color: #667eea;">Login here</a>
                 </p>
             </form>
         </div>
@@ -417,11 +417,7 @@
         // ===================================
         // CONFIGURATION
         // ===================================
-        // IMPORTANT: Replace this with your Azure Function App URL after deployment
         const API_BASE = 'https://family-recipe-api-bqcthffuaahtb6a5.centralindia-01.azurewebsites.net/api';
-        
-        // For local development, use:
-        // const API_BASE = 'http://localhost:7071/api';
 
         // ===================================
         // STATE MANAGEMENT
@@ -490,7 +486,6 @@
                 authToken = data.token;
                 currentUserName = data.username;
 
-                // Store token in session
                 sessionStorage.setItem('authToken', authToken);
                 sessionStorage.setItem('username', currentUserName);
 
@@ -524,13 +519,12 @@
             const password = document.getElementById('signupPassword').value;
             const confirmPassword = document.getElementById('signupConfirmPassword').value;
 
-            // Validate passwords match
             if (password !== confirmPassword) {
                 showMessage('Passwords do not match');
                 return;
             }
 
-            const signupBtn = document.getElementById('signupBtn');
+            const signupBtn = document.getElementById('signupSubmitBtn');
             signupBtn.disabled = true;
             signupBtn.textContent = 'Creating Account...';
 
@@ -550,11 +544,9 @@
                 showMessage(data.message || 'Account created successfully!', 'success');
                 closeSignupModal();
 
-                // Auto-fill login form
                 document.getElementById('loginUsername').value = username;
                 document.getElementById('loginPassword').value = password;
 
-                // Optional: Auto-login after signup
                 setTimeout(() => {
                     login();
                 }, 1000);
@@ -591,7 +583,6 @@
                 const loggedOutSection = document.getElementById('loggedOutSection');
                 const loggedInSection = document.getElementById('loggedInSection');
 
-                // Add null checks
                 if (currentUserElement && loggedOutSection && loggedInSection) {
                     currentUserElement.textContent = currentUserName;
                     loggedOutSection.classList.add('hidden');
@@ -599,6 +590,7 @@
                 } else {
                     console.error('Auth UI elements not found');
                 }
+            }
         }
 
         // ===================================
@@ -640,7 +632,7 @@
 
         function displayRecipes(recipesToShow) {
             const grid = document.getElementById('recipeGrid');
-            
+
             if (recipesToShow.length === 0) {
                 displayEmptyState();
                 return;
@@ -649,7 +641,7 @@
             grid.innerHTML = recipesToShow.map(recipe => {
                 const date = new Date(recipe.createdAt).toLocaleDateString();
                 return `
-                        <div class="recipe-card" onclick="viewRecipe(${recipe.recipeID})">
+                        <div class="recipe-card" data-recipe-id="${recipe.recipeID}">
                             <img src="${recipe.photoURL || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400'}"
                                  alt="${recipe.name}"
                                  class="recipe-image"
@@ -662,6 +654,14 @@
                         </div>
                     `;
             }).join('');
+
+            // Add click listeners to recipe cards
+            document.querySelectorAll('.recipe-card').forEach(card => {
+                card.addEventListener('click', function () {
+                    const recipeId = parseInt(this.dataset.recipeId);
+                    viewRecipe(recipeId);
+                });
+            });
         }
 
         function displayEmptyState() {
@@ -794,25 +794,76 @@
         }
 
         // ===================================
-        // EVENT LISTENERS
+        // MODAL CLICK OUTSIDE TO CLOSE
         // ===================================
-        window.onclick = function (event) {
+        function handleModalOutsideClick(event) {
             if (event.target.classList.contains('modal')) {
                 event.target.style.display = 'none';
             }
         }
-
-        document.getElementById('loginPassword').addEventListener('keypress', function (event) {
-            if (event.key === 'Enter') {
-                login();
-            }
-        });
 
         // ===================================
         // INITIALIZATION
         // ===================================
         document.addEventListener('DOMContentLoaded', function () {
             try {
+                // Authentication buttons
+                const loginBtn = document.getElementById('loginBtn');
+                const signupBtnMain = document.getElementById('signupBtnMain');
+                const logoutBtn = document.getElementById('logoutBtn');
+                const addRecipeBtnMain = document.getElementById('addRecipeBtnMain');
+
+                if (loginBtn) loginBtn.addEventListener('click', login);
+                if (signupBtnMain) signupBtnMain.addEventListener('click', openSignupModal);
+                if (logoutBtn) logoutBtn.addEventListener('click', logout);
+                if (addRecipeBtnMain) addRecipeBtnMain.addEventListener('click', openAddRecipeModal);
+
+                // Signup modal elements
+                const closeSignupBtn = document.getElementById('closeSignupBtn');
+                const signupForm = document.getElementById('signupForm');
+                const signupLoginLink = document.getElementById('signupLoginLink');
+
+                if (closeSignupBtn) closeSignupBtn.addEventListener('click', closeSignupModal);
+                if (signupForm) signupForm.addEventListener('submit', submitSignup);
+                if (signupLoginLink) {
+                    signupLoginLink.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        closeSignupModal();
+                    });
+                }
+
+                // Recipe modal elements
+                const closeAddRecipeBtn = document.getElementById('closeAddRecipeBtn');
+                const closeViewRecipeBtn = document.getElementById('closeViewRecipeBtn');
+                const recipeForm = document.getElementById('recipeForm');
+                const recipePhoto = document.getElementById('recipePhoto');
+
+                if (closeAddRecipeBtn) closeAddRecipeBtn.addEventListener('click', closeAddRecipeModal);
+                if (closeViewRecipeBtn) closeViewRecipeBtn.addEventListener('click', closeViewRecipeModal);
+                if (recipeForm) recipeForm.addEventListener('submit', submitRecipe);
+                if (recipePhoto) recipePhoto.addEventListener('change', previewImage);
+
+                // Search and filter elements
+                const searchInput = document.getElementById('searchInput');
+                const categoryFilter = document.getElementById('categoryFilter');
+
+                if (searchInput) searchInput.addEventListener('input', filterRecipes);
+                if (categoryFilter) categoryFilter.addEventListener('change', filterRecipes);
+
+                // Login password Enter key
+                const loginPassword = document.getElementById('loginPassword');
+                if (loginPassword) {
+                    loginPassword.addEventListener('keypress', function (event) {
+                        if (event.key === 'Enter') {
+                            login();
+                        }
+                    });
+                }
+
+                // Modal outside click
+                window.addEventListener('click', handleModalOutsideClick);
+
+                // Initialize app
                 checkExistingSession();
                 loadRecipes();
             } catch (error) {
