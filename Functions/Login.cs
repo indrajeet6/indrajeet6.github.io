@@ -12,11 +12,18 @@ using BCrypt.Net;
 using FamilyRecipeAPI.Models;
 using FamilyRecipeAPI.Services;
 using System.Data.SqlClient;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace FamilyRecipeAPI.Functions
 {
     public static class Login
     {
+        static Login()
+        {
+            // This forces the JWT assembly to be included
+            var _ = new JwtSecurityToken();
+        }
+
         [FunctionName("Login")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "login")] HttpRequest req,
